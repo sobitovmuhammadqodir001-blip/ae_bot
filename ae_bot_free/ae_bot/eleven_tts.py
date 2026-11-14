@@ -49,8 +49,25 @@ async def generate(text):
                         422: 'ElevenLabs til yoki so‘rov parametrlarini qabul qilmadi.',
                         429: 'ElevenLabs limiti tugagan yoki so‘rovlar ko‘p. Hisobni tekshiring.',
                     }
-                    raise ElevenTTSError(errors.get(response.status,
-                        'ElevenLabs hozir javob bermayapti. Keyinroq urinib ko‘ring.'))
+                    try:
+                        payload = await response.json(content_type=None)
+                    except Exception:
+                        payload = {}
+                    detail = payload.get('detail', {}) if isinstance(payload, dict) else {}
+                    if isinstance(detail, dict):
+                        code = str(detail.get('status', 'unknown'))
+                        reason = str(detail.get('message', ''))
+                    else:
+                        code, reason = 'unknown', str(detail)
+                    # Kalit hamda ehtimoliy maxfiy qiymatlar chiqarilmaydi.
+                    reason = reason.replace(key, '[maxfiy]')
+                    reason = re.sub(r'sk_[A-Za-z0-9_-]+', '[maxfiy]', reason)
+                    reason = re.sub(r'[\\x00-\\x1f]', ' ', reason)[:350]
+                    code = re.sub(r'[^A-Za-z0-9_-]', '', code)[:60]
+                    base = errors.get(response.status, 'ElevenLabs so‘rovni rad etdi.')
+                    raise ElevenTTSError(
+                        f'{base}\\nHTTP {response.status} | {code}\\n{reason}'
+                    )
                 mime = response.headers.get('Content-Type', '').lower()
                 if not mime.startswith(('audio/', 'application/octet-stream')):
                     raise ElevenTTSError('ElevenLabs audio o‘rniga boshqa javob qaytardi.')
