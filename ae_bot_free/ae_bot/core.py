@@ -129,6 +129,7 @@ async def send_md(message: Message, md_chunk: str) -> Message | None:
 
 
 from thinking_animation import ThinkingSpinner as Spinner
+from voice_buttons import attach_listen
 
 
 # ---------------------------------------------------------------- limitlar
@@ -205,7 +206,7 @@ async def run_answer(
             + [{"role": "user", "content": api_content}]
         )
 
-        result = await _generate(message, ai, cfg, api_messages, stop)
+        result = await _generate(message, ai, cfg, api_messages, stop, db=db)
         if result is None:
             return
         full, stopped = result
@@ -214,13 +215,12 @@ async def run_answer(
             await run(db.add_message, topic_id, "assistant", full)
         await run(db.add_usage, uid, requests=1)
 
-        if speak and full and not stopped:
-            await _send_voice(message, ai, cfg, full)
+        # Ovoz endi faqat "Ovozda tinglash" bosilganda yuboriladi.
     finally:
         pass
 
 
-async def _generate(message: Message, ai: AI, cfg: Settings, api_messages: list, stop: asyncio.Event):
+async def _generate(message: Message, ai: AI, cfg: Settings, api_messages: list, stop: asyncio.Event, *, db=None):
     """GIF -> kutish matni -> formatlangan oqimli javob."""
     state = {"full": "", "last_edit": 0.0}
     live = None
@@ -305,22 +305,14 @@ async def _generate(message: Message, ai: AI, cfg: Settings, api_messages: list,
     chunks = split_markdown(full)
     await edit(live, md_to_html(chunks[0]) + (footer if len(chunks) == 1 else ""),
                html=True, fallback=chunks[0])
+    if db is not None:
+        await attach_listen(live, chunks[0], db, message.from_user.id)
     for index, chunk in enumerate(chunks[1:], start=2):
         sent = await send_md(message, chunk)
         if sent is None:
             break
         if index == len(chunks) and stopped:
             await edit(sent, md_to_html(chunk) + footer, html=True, fallback=chunk)
+        if db is not None:
+            await attach_listen(sent, chunk, db, message.from_user.id)
     return (full, stopped)
-
-
-async def _send_voice(message: Message, ai: AI, cfg: Settings, full: str) -> None:
-    text = plain_text(full, cfg.tts_max_chars)
-    if not text:
-        return
-    try:
-        await message.bot.send_chat_action(message.chat.id, ChatAction.RECORD_VOICE)
-        audio, name = await ai.tts(text)
-        await message.answer_voice(BufferedInputFile(audio, filename=name))
-    except Exception:
-        log.exception("Ovozli javob yuborilmadi (matn baribir yuborilgan)")
