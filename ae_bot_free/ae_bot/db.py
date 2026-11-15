@@ -222,9 +222,9 @@ class Database:
             """
             INSERT INTO usage(user_id, day, requests, images, voice_seconds) VALUES(?,?,?,?,?)
             ON CONFLICT(user_id, day) DO UPDATE SET
-                requests = requests + excluded.requests,
-                images = images + excluded.images,
-                voice_seconds = voice_seconds + excluded.voice_seconds
+                requests = usage.requests + excluded.requests,
+                images = usage.images + excluded.images,
+                voice_seconds = usage.voice_seconds + excluded.voice_seconds
             """,
             (user_id, today(), requests, images, voice_seconds),
         )
@@ -248,3 +248,4 @@ class Database:
     def close(self):
         with self._lock:
             self._conn.close()
+
