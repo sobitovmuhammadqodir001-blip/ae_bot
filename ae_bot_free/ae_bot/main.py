@@ -18,6 +18,7 @@ from db import Database
 from handlers import chat, commands
 from telegram_topics import install_topics
 from voice_buttons import router as voice_router
+from file_tools import router as file_router
 
 
 def setup_logging() -> None:
@@ -50,17 +51,21 @@ async def main() -> None:
     install_topics(dp, bot, db)
     dp.include_router(voice_router)
     dp.include_router(commands.router)
+    dp.include_router(file_router)
     dp.include_router(chat.router)
 
     await bot.set_my_commands(
         [
-            BotCommand(command="start", description="Boshlash"),
-            BotCommand(command="new", description="Yangi suhbat"),
-            BotCommand(command="topics", description="Suhbatlarim"),
-            BotCommand(command="image", description="Rasm yaratish"),
-            BotCommand(command="settings", description="Sozlamalar"),
-            BotCommand(command="stop", description="Javobni to'xtatish"),
-            BotCommand(command="help", description="Yordam"),
+            BotCommand(command="start", description="🚀 Botni boshlash"),
+            BotCommand(command="new", description="✨ Yangi suhbat"),
+            BotCommand(command="topics", description="🗂 Suhbatlarim"),
+            BotCommand(command="rename", description="✏️ Suhbat nomini o‘zgartirish"),
+            BotCommand(command="image", description="🎨 Rasm yaratish"),
+            BotCommand(command="photo", description="🌍 Internetdan surat topish"),
+            BotCommand(command="file", description="📄 PDF, Word, PowerPoint va kod fayli"),
+            BotCommand(command="settings", description="⚙️ Sozlamalar"),
+            BotCommand(command="stop", description="⏹ Javobni to‘xtatish"),
+            BotCommand(command="help", description="💡 Yordam"),
         ]
     )
     mode = os.getenv("BOT_MODE", "webhook").strip().lower()
@@ -109,3 +114,4 @@ if __name__ == "__main__":
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
         pass
+

@@ -14,7 +14,7 @@ class FileProblem(Exception):
 
 TEXT_EXT = {
     ".txt", ".md", ".csv", ".tsv", ".json", ".log", ".xml", ".yaml", ".yml",
-    ".ini", ".sql", ".html", ".py", ".js", ".ts", ".css",
+    ".ini", ".sql", ".html", ".py", ".js", ".ts", ".css", ".tex", ".svg",
 }
 
 
@@ -82,6 +82,10 @@ def extract_text(data: bytes, ext: str, limit: int) -> str:
             text = _docx(data)
         elif ext in (".xlsx", ".xlsm"):
             text = _xlsx(data, limit)
+        elif ext == ".pptx":
+            from pptx import Presentation
+            deck = Presentation(io.BytesIO(data))
+            text = "\n\n".join("\n".join(shape.text for shape in slide.shapes if shape.has_text_frame) for slide in deck.slides)
         elif ext in TEXT_EXT:
             text = data.decode("utf-8", errors="replace")
         elif ext in (".doc", ".xls", ".ppt"):
@@ -99,3 +103,4 @@ def extract_text(data: bytes, ext: str, limit: int) -> str:
     if len(text) > limit:
         text = text[:limit] + "\n\n[... fayl uzun bo'lgani uchun qolgan qismi kesib tashlandi]"
     return text
+
