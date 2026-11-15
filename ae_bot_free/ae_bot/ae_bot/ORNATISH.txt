@@ -1,0 +1,35 @@
+AE Yordamchi — admin foydalanuvchilar va bot faoliyati
+
+Boshlanish sanasi: 15.11.2026. Vaqt zonasi: Asia/Tashkent, UTC+5.
+
+YANGI:
+ae_bot_free/ae_bot/admin_users.py
+ae_bot_free/ae_bot/bot_activity.py
+
+ALMASHTIRING:
+ae_bot_free/ae_bot/main.py
+ae_bot_free/ae_bot/handlers/commands.py
+
+main.py va yangi 2 fayl asosiy ae_bot papkasiga yuklanadi.
+commands.py FAQAT handlers papkasiga yuklanadi.
+ZIP'ni avval oching. Papkalarni repo boshiga tashlamang.
+Qolgan fayllarga, db.py va bazadagi ma'lumotlarga tegmang.
+
+Render Environment'da mavjud ADMIN_ID sizning raqamli Telegram ID'ingiz bo'lsin.
+ADMIN_ID o'rniga username yoki bot tokenini yozmang.
+Boshlanish sanasi kodda belgilangan, yangi Environment shart emas.
+Agar BOT_STARTED_AT avval kiritilgan bo'lsa, qiymatini 2026-11-15 qiling.
+
+Commit changes -> Render Live bo'lgach:
+/admin -> Foydalanuvchilar (faqat admin).
+/stats -> mavjud statistika va Foydalanuvchilar tugmasi.
+/users -> foydalanuvchilar ro'yxati (faqat admin).
+/start -> oddiy salomlashuv, faoliyat muddati ko'rsatilmaydi.
+/activity -> faqat admin uchun. Umumiy buyruqlar menyusida yo'q.
+
+Statistika bazadagi foydalanuvchilarni sanaydi.
+Bugun/30 kun faolligi: AI, rasm yoki ovoz sarfi qayd etilgan foydalanuvchilar.
+Bu Telegram'ning oylik foydalanuvchi hisoblagichini o'zgartirmaydi.
+Botning nomi ostidagi Telegram matni o'zgarmaydi.
+
+10 mahalliy test o'tdi. Haqiqiy botda tekshirish deploydan keyin.
