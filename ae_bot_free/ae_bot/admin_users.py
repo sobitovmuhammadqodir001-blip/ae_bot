@@ -1,35 +1,3 @@
-"""Admin uchun foydalanuvchilar ro'yxati. SQLite/PostgreSQL bilan ishlaydi."""
-from __future__ import annotations
-
-import logging
-from datetime import timedelta
-from html import escape
-
-from aiogram import F, Router
-from aiogram.enums import ParseMode
-from aiogram.exceptions import TelegramBadRequest
-from aiogram.filters import Command
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-
-from db import run, today
-from bot_activity import activity_text
-
-router = Router(name='ae_admin_users')
-router.message.filter(F.chat.type == 'private')
-log = logging.getLogger(__name__)
-PAGE_SIZE = 8
-ACTIVE_SQL = '(requests > 0 OR images > 0 OR voice_seconds > 0)'
-
-
-def is_admin(cfg, uid):
-    return bool(cfg.admin_id) and uid == cfg.admin_id
-
-
-def admin_keyboard():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text='👥 Foydalanuvchilar', callback_data='au:users:0')],
-        [InlineKeyboardButton(text='📊 Statistikani yangilash', callback_data='au:home')],
-    ])
 
 
 def summary(db):
@@ -94,7 +62,7 @@ def page_view(db, page):
     return '\n'.join(parts), InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-@router.message(Command('admin'))
+@router.message(Command('boshqaruv'))
 async def cmd_admin(message, db, cfg):
     if not is_admin(cfg, message.from_user.id):
         await message.answer('🔒 Bu bo‘lim faqat administrator uchun.')
