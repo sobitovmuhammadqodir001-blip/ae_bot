@@ -14,6 +14,7 @@ from ai import AI
 from config import Settings
 from db import Database, run
 from handlers import media
+from admin_users import admin_keyboard
 
 HTML = ParseMode.HTML
 router = Router()
@@ -162,4 +163,5 @@ async def cmd_stats(message: Message, db: Database, cfg: Settings):
     if not cfg.admin_id or message.from_user.id != cfg.admin_id:
         return
     stats = await run(db.stats)
-    await message.answer(texts.stats_text(stats), parse_mode=HTML)
+    await message.answer(texts.stats_text(stats), parse_mode=HTML, reply_markup=admin_keyboard())
+
