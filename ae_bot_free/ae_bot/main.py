@@ -20,6 +20,7 @@ from telegram_topics import install_topics
 from voice_buttons import router as voice_router
 from file_tools import router as file_router
 from admin_users import router as admin_router
+from broadcast import router as broadcast_router
 
 
 def setup_logging() -> None:
@@ -51,6 +52,7 @@ async def main() -> None:
     dp = Dispatcher(db=db, ai=ai, cfg=cfg)   # handlerlar shularni nomi bo'yicha oladi
     install_topics(dp, bot, db)
     dp.include_router(voice_router)
+    dp.include_router(broadcast_router)
     dp.include_router(admin_router)
     dp.include_router(commands.router)
     dp.include_router(file_router)
@@ -116,5 +118,6 @@ if __name__ == "__main__":
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
         pass
+
 
 
