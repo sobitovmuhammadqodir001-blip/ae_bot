@@ -1,40 +1,35 @@
-AE Yordamchi — internet rasmi va hujjat eksporti
+AE Yordamchi — admin foydalanuvchilar va bot faoliyati
 
-Barcha fayllar GitHub'dagi ae_bot_free/ae_bot/ papkasiga qo'yiladi.
+Boshlanish sanasi: 15.11.2026. Vaqt zonasi: Asia/Tashkent, UTC+5.
 
-1. YANGI fayllar: file_tools.py, file_builder.py, internet_images.py, AE_Font.ttf.
-2. ALMASHTIRILADI: main.py, docs.py, requirements.txt.
-3. FONT_LICENSE.txt shrift litsenziyasi ham shu papkada qolsin.
-4. GitHub'da barcha fayllarni bitta commit bilan saqlang. Render deploy tugab Live bo'lsin.
-5. Environment'ga yangi API kaliti kerak emas. Ishlayotgan OpenAI kaliti ishlatiladi.
+YANGI:
+ae_bot_free/ae_bot/admin_users.py
+ae_bot_free/ae_bot/bot_activity.py
 
-ZIP ichidagi .py fayllar tayyor. Ularni bevosita GitHub'ga upload qilish mumkin.
-Alohida .txt nusxalarini nusxalab qo'ysangiz, GitHub'da fayl nomi .py bilan tugashi shart.
-requirements.txt nomi o'zgarishsiz qolsin. AE_Font.ttf matn emas — fayl sifatida upload qiling.
+ALMASHTIRING:
+ae_bot_free/ae_bot/main.py
+ae_bot_free/ae_bot/handlers/commands.py
 
-Sinov:
-/photo Lamine Yamal
-/file pdf O'zbekiston haqida qisqa ma'lumot yoz
-/file pptx Quyosh tizimi haqida 5 slayd tayyorla
-/file html Oddiy kalkulyator sahifasini yoz
-/file tex Kvadrat tenglama formulalari
+main.py va yangi 2 fayl asosiy ae_bot papkasiga yuklanadi.
+commands.py FAQAT handlers papkasiga yuklanadi.
+ZIP'ni avval oching. Papkalarni repo boshiga tashlamang.
+Qolgan fayllarga, db.py va bazadagi ma'lumotlarga tegmang.
 
-Rasmni “PDF qil”, “Word fayl qil” yoki “PPTX qil” izohi bilan yuboring.
-Oldingi rasm yoki matnga reply qilib ham “PDF qil” deyish mumkin.
-Rasmdagi yozuvlarni chiqarish: rasmga “Rasmdagi matnni TXT fayl qilib yoz” izohini bering.
-Shu mavzudagi oxirgi bot javobini olish: “Shuni PDF qil”.
-Hujjat matni: mavjud PDF, DOCX, PPTX, XLSX va matn fayllarini reply/caption orqali ishlatadi.
-Skan PDF OCR hozir yo'q: alohida rasm sifatida yuboring.
-TEX fayli LaTeX manbasi; avtomatik PDF kompilyatsiyasi yo'q.
-Kod fayllari yaratiladi, ishga tushirilmaydi. Boshqa formatlar /file yordamida ko'rsatiladi.
+Render Environment'da mavjud ADMIN_ID sizning raqamli Telegram ID'ingiz bo'lsin.
+ADMIN_ID o'rniga username yoki bot tokenini yozmang.
+Boshlanish sanasi kodda belgilangan, yangi Environment shart emas.
+Agar BOT_STARTED_AT avval kiritilgan bo'lsa, qiymatini 2026-11-15 qiling.
 
-Suratlar Wikimedia Commons'dan olinadi, muallif/litsenziya/manba bilan yuboriladi.
-Har bir qidiruvda bir dona surat. Topilmasa qidiruv matnini aniqlashtiring.
-Matn/kod: TXT, TEX, HTML, CSS, JS, TS, PY, JSON, CSV, MD, XML, YAML, SQL, SVG.
-Hujjat: PDF, DOCX (Word), PPTX (PowerPoint).
-Bir faylda 60000 belgigacha. Telegram manba fayli max_file_mb yoki 15 MB dan kichik bo'lsin.
+Commit changes -> Render Live bo'lgach:
+/admin -> Foydalanuvchilar (faqat admin).
+/stats -> mavjud statistika va Foydalanuvchilar tugmasi.
+/users -> foydalanuvchilar ro'yxati (faqat admin).
+/start -> oddiy salomlashuv, faoliyat muddati ko'rsatilmaydi.
+/activity -> faqat admin uchun. Umumiy buyruqlar menyusida yo'q.
 
-Tekshirildi: 11 mahalliy test, PDF/Word/PowerPoint ochilishi, rasm joylashishi,
-kod saqlanishi, so'rov yo'nalishi, mavzu xotirasi, qidiruv topilmadi holati.
-Internet qidiruv tarmog'i va OpenAI/Telegram chaqiruvlari mahalliy sinovda almashtirilgan.
-Haqiqiy botda deploydan keyin yuqoridagi misollar bilan tekshiring.
+Statistika bazadagi foydalanuvchilarni sanaydi.
+Bugun/30 kun faolligi: AI, rasm yoki ovoz sarfi qayd etilgan foydalanuvchilar.
+Bu Telegram'ning oylik foydalanuvchi hisoblagichini o'zgartirmaydi.
+Botning nomi ostidagi Telegram matni o'zgarmaydi.
+
+10 mahalliy test o'tdi. Haqiqiy botda tekshirish deploydan keyin.
