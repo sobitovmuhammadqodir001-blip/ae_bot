@@ -1,6 +1,25 @@
+"""Admin uchun foydalanuvchilar ro'yxati. SQLite/PostgreSQL bilan ishlaydi."""
+from __future__ import annotations
 
+import logging
+from datetime import timedelta
+from html import escape
 
-def summary(db):
+from aiogram import F, Router
+from aiogram.enums import ParseMode
+from aiogram.exceptions import TelegramBadRequest
+from aiogram.filters import Command
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
+from db import run, today
+from bot_activity import activity_text
+
+router = Router(name='ae_admin_users')
+router.message.filter(F.chat.type == 'private')
+log = logging.getLogger(__name__)
+PAGE_SIZE = 8
+ACTIVE_SQL = '(requests > 0 OR images > 0 OR voice_seconds > 0)'
+f summary(db):
     from datetime import date
     day = today()
     start = (date.fromisoformat(day) - timedelta(days=29)).isoformat()
@@ -62,53 +81,16 @@ def page_view(db, page):
     return '\n'.join(parts), InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-@router.message(Command('boshqaruv'))
-async def cmd_admin(message, db, cfg):
-    if not is_admin(cfg, message.from_user.id):
-        await message.answer('🔒 Bu bo‘lim faqat administrator uchun.')
-        return
-    stats = await run(summary, db)
-    await message.answer('⚙️ <b>Admin panel</b>\n\n' + activity_text() + '\n\n' + header(stats),
-                         parse_mode=ParseMode.HTML, reply_markup=admin_keyboard())
+
+def is_admin(cfg, uid):
+    return bool(cfg.admin_id) and uid == cfg.admin_id
 
 
-@router.message(Command('activity'))
-async def cmd_activity(message, cfg):
-    # Eski buyruq faqat admin uchun; umumiy menyuda ko'rsatilmaydi.
-    if is_admin(cfg, message.from_user.id):
-        await message.answer(activity_text())
+def admin_keyboard():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text='👥 Foydalanuvchilar', callback_data='au:users:0')],
+        [InlineKeyboardButton(text='📊 Statistikani yangilash', callback_data='au:home')],
+    ])
 
 
-@router.message(Command('users'))
-@router.message(F.text == '👥 Foydalanuvchilar')
-async def cmd_users(message, db, cfg):
-    if not is_admin(cfg, message.from_user.id):
-        await message.answer('🔒 Bu bo‘lim faqat administrator uchun.')
-        return
-    body, keyboard = await run(page_view, db, 0)
-    await message.answer(body, parse_mode=ParseMode.HTML, reply_markup=keyboard)
-
-
-@router.callback_query(F.data.startswith('au:'))
-async def cb_admin(call, db, cfg):
-    message = call.message
-    if not is_admin(cfg, call.from_user.id) or not message or message.chat.type != 'private':
-        await call.answer('🔒 Bu bo‘lim faqat administrator uchun.', show_alert=True)
-        return
-    await call.answer()
-    try:
-        if call.data == 'au:home':
-            stats = await run(summary, db)
-            body = '⚙️ <b>Admin panel</b>\n\n' + activity_text() + '\n\n' + header(stats)
-            keyboard = admin_keyboard()
-        elif call.data.startswith('au:users:'):
-            value = call.data.rsplit(':', 1)[-1]
-            if not value.isdecimal() or len(value) > 8:
-                return
-            body, keyboard = await run(page_view, db, int(value))
-        else:
-            return
-        await message.edit_text(body, parse_mode=ParseMode.HTML, reply_markup=keyboard)
-    except TelegramBadRequest as exc:
-        if 'not modified' not in str(exc).lower():
-            log.warning('Admin panel tahrirlash xatosi: %s', exc)
+de
