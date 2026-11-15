@@ -3,9 +3,10 @@ from contextvars import ContextVar
 import asyncio
 import logging
 import threading
+import time
 
 from aiogram import BaseMiddleware
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.exceptions import TelegramBadRequest
 
 from db import run
@@ -117,12 +118,49 @@ class TopicIncoming(BaseMiddleware):
         self.db = db
         self.store = None
         self.init_lock = asyncio.Lock()
+        self.rename_pending = {}
 
     async def get_store(self):
         async with self.init_lock:
             if self.store is None:
                 self.store = await run(TopicStore, self.db)
         return self.store
+
+    async def _set_name(self, msg, uid, thread, tid, title):
+        title = " ".join(title.split())
+        if not title or len(title) > 128:
+            await msg.answer("Nom 1–128 belgidan iborat bo‘lsin. Qayta yozing yoki /cancel bosing.")
+            return False
+        try:
+            await msg.bot.edit_forum_topic(
+                chat_id=msg.chat.id, message_thread_id=thread, name=title)
+        except TelegramBadRequest as exc:
+            if "not modified" not in str(exc).lower():
+                log.warning("Mavzu nomi o‘zgarmadi: %s", exc)
+                await msg.answer("Nom o‘zgarmadi. Keyinroq /rename bilan urinib ko‘ring.")
+                return False
+        except Exception:
+            log.exception("Mavzu nomini Telegram’da saqlashda xato")
+            await msg.answer("Telegram bilan ulanishda muammo. Keyinroq /rename bilan urinib ko‘ring.")
+            return False
+        await run(self.db._exec,
+                  "UPDATE topics SET title=? WHERE id=? AND user_id=?",
+                  (title, tid, uid))
+        return True
+
+    async def _forward(self, handler, event, data, msg, uid, thread, tid):
+        if not thread or tid is None:
+            return await handler(event, data)
+        before = await run(self.db.topic_title, tid)
+        result = await handler(event, data)
+        after = await run(self.db.topic_title, tid)
+        if before == "Yangi suhbat" and after != before:
+            try:
+                await msg.bot.edit_forum_topic(
+                    chat_id=msg.chat.id, message_thread_id=thread, name=after[:128])
+            except Exception:
+                log.warning("Avtomatik mavzu nomi yangilanmadi", exc_info=True)
+        return result
 
     async def __call__(self, handler, event, data):
         callback = isinstance(event, CallbackQuery)
@@ -137,6 +175,7 @@ class TopicIncoming(BaseMiddleware):
             (msg.chat.id, thread) if thread else None
         )
 
+        tid = None
         try:
             if thread:
                 store = await self.get_store()
@@ -170,6 +209,41 @@ class TopicIncoming(BaseMiddleware):
                 if text else ""
             )
 
+            pending_key = (uid, msg.chat.id, thread)
+            expires = self.rename_pending.get(pending_key, 0)
+            pending = expires > time.monotonic()
+            if expires and not pending:
+                self.rename_pending.pop(pending_key, None)
+            rename = (event.data == "ae:rename") if callback else command == "/rename"
+            if not callback and command == "/cancel" and pending:
+                self.rename_pending.pop(pending_key, None)
+                await msg.answer("Nom o‘zgartirish bekor qilindi.")
+                return
+            if rename:
+                if callback:
+                    await event.answer()
+                if not thread:
+                    await msg.answer("Avval chap paneldan kerakli mavzuni oching.")
+                    return
+                core.IMAGE_PENDING.discard(uid)
+                pieces = text.split(maxsplit=1)
+                args = pieces[1] if not callback and len(pieces) > 1 else ""
+                if args:
+                    if await self._set_name(msg, uid, thread, tid, args):
+                        self.rename_pending.pop(pending_key, None)
+                        await msg.answer("✅ Mavzu nomi o‘zgartirildi.")
+                else:
+                    self.rename_pending[pending_key] = time.monotonic() + 300
+                    await msg.answer("✏️ Shu mavzuning yangi nomini yozing.\nBekor qilish: /cancel")
+                return
+            if pending and not callback and text and not text.startswith("/") and text not in texts.MENU_BUTTONS:
+                if await self._set_name(msg, uid, thread, tid, text):
+                    self.rename_pending.pop(pending_key, None)
+                    await msg.answer("✅ Mavzu nomi o‘zgartirildi.")
+                return
+            if not callback and (text in texts.MENU_BUTTONS or text.startswith("/")):
+                self.rename_pending.pop(pending_key, None)
+
             if callback:
                 new = event.data == "newtopic"
                 listing = (event.data or "").startswith(
@@ -183,7 +257,7 @@ class TopicIncoming(BaseMiddleware):
                 )
 
             if not (new or listing):
-                return await handler(event, data)
+                return await self._forward(handler, event, data, msg, uid, thread, tid)
 
             enabled = bool(thread)
             if not enabled:
@@ -202,7 +276,12 @@ class TopicIncoming(BaseMiddleware):
                 await msg.answer(
                     "📚 Suhbatlaringiz Telegram mavzular panelida.\n\n"
                     "Kerakli mavzuni ochib yozishni davom ettiring.\n"
-                    "Yangi suhbat uchun /new buyrug‘ini yuboring."
+                    "Yangi suhbat uchun /new buyrug‘ini yuboring.\n"
+                    "Nomini o‘zgartirish: /rename Yangi nom",
+                    reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                        [InlineKeyboardButton(text="✏️ Nomini o‘zgartirish", callback_data="ae:rename")],
+                        [InlineKeyboardButton(text="🆕 Yangi suhbat", callback_data="newtopic")],
+                    ])
                 )
                 return
 
