@@ -1,0 +1,40 @@
+AE Yordamchi — internet rasmi va hujjat eksporti
+
+Barcha fayllar GitHub'dagi ae_bot_free/ae_bot/ papkasiga qo'yiladi.
+
+1. YANGI fayllar: file_tools.py, file_builder.py, internet_images.py, AE_Font.ttf.
+2. ALMASHTIRILADI: main.py, docs.py, requirements.txt.
+3. FONT_LICENSE.txt shrift litsenziyasi ham shu papkada qolsin.
+4. GitHub'da barcha fayllarni bitta commit bilan saqlang. Render deploy tugab Live bo'lsin.
+5. Environment'ga yangi API kaliti kerak emas. Ishlayotgan OpenAI kaliti ishlatiladi.
+
+ZIP ichidagi .py fayllar tayyor. Ularni bevosita GitHub'ga upload qilish mumkin.
+Alohida .txt nusxalarini nusxalab qo'ysangiz, GitHub'da fayl nomi .py bilan tugashi shart.
+requirements.txt nomi o'zgarishsiz qolsin. AE_Font.ttf matn emas — fayl sifatida upload qiling.
+
+Sinov:
+/photo Lamine Yamal
+/file pdf O'zbekiston haqida qisqa ma'lumot yoz
+/file pptx Quyosh tizimi haqida 5 slayd tayyorla
+/file html Oddiy kalkulyator sahifasini yoz
+/file tex Kvadrat tenglama formulalari
+
+Rasmni “PDF qil”, “Word fayl qil” yoki “PPTX qil” izohi bilan yuboring.
+Oldingi rasm yoki matnga reply qilib ham “PDF qil” deyish mumkin.
+Rasmdagi yozuvlarni chiqarish: rasmga “Rasmdagi matnni TXT fayl qilib yoz” izohini bering.
+Shu mavzudagi oxirgi bot javobini olish: “Shuni PDF qil”.
+Hujjat matni: mavjud PDF, DOCX, PPTX, XLSX va matn fayllarini reply/caption orqali ishlatadi.
+Skan PDF OCR hozir yo'q: alohida rasm sifatida yuboring.
+TEX fayli LaTeX manbasi; avtomatik PDF kompilyatsiyasi yo'q.
+Kod fayllari yaratiladi, ishga tushirilmaydi. Boshqa formatlar /file yordamida ko'rsatiladi.
+
+Suratlar Wikimedia Commons'dan olinadi, muallif/litsenziya/manba bilan yuboriladi.
+Har bir qidiruvda bir dona surat. Topilmasa qidiruv matnini aniqlashtiring.
+Matn/kod: TXT, TEX, HTML, CSS, JS, TS, PY, JSON, CSV, MD, XML, YAML, SQL, SVG.
+Hujjat: PDF, DOCX (Word), PPTX (PowerPoint).
+Bir faylda 60000 belgigacha. Telegram manba fayli max_file_mb yoki 15 MB dan kichik bo'lsin.
+
+Tekshirildi: 11 mahalliy test, PDF/Word/PowerPoint ochilishi, rasm joylashishi,
+kod saqlanishi, so'rov yo'nalishi, mavzu xotirasi, qidiruv topilmadi holati.
+Internet qidiruv tarmog'i va OpenAI/Telegram chaqiruvlari mahalliy sinovda almashtirilgan.
+Haqiqiy botda deploydan keyin yuqoridagi misollar bilan tekshiring.
