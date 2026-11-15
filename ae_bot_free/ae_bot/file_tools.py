@@ -14,6 +14,7 @@ import docs
 from db import run
 from file_builder import FORMATS, TEXT_FORMATS, build_file, clean_image
 from internet_images import search_image
+from pdf_layout import PLAN_PROMPT, parse_plan, clean_copy, infer_style
 
 router = Router(name='ae_file_tools')
 router.message.filter(lambda m: m.chat.type == 'private')
@@ -36,7 +37,7 @@ def requested_format(text):
         return command.group(1) if command.group(1) in FORMATS else None
     for fmt, pattern in [('pptx', r'\b(power\s*point|powerpoint|pptx|prezentatsiya|taqdimot|slayd)\b'),
                          ('docx', r'\b(word|docx)\b'), ('pdf', r'\bpdf\b')]:
-        if re.search(pattern, s) and re.search(r'qil|tayyor|yarat|ber|tuz|aylantir|saqla|format|fayl', s):
+        if re.search(pattern, s) and re.search(r'qil|tayyor|yarat|ber|tuz|aylantir|saqla|format|farmat|fayl|tashla|yubor', s):
             return fmt
     for fmt in sorted(TEXT_FORMATS, key=len, reverse=True):
         if re.search(r'(?<!\w)\.?'+fmt+r'(?!\w)', s) and re.search(r'fayl|format|saqla|kod.*yoz|yoz.*kod', s):
@@ -120,6 +121,9 @@ async def handle_tools(message, db, ai, cfg):
     if re.fullmatch(r'/file(?:@\w+)?', instruction, re.I) or (instruction.startswith('/file') and not fmt):
         await message.answer(HELP)
         return
+    if fmt == 'pdf' and re.search(r'olasanmi|mumkinmi|bo.ladimi', instruction, re.I) and not message.reply_to_message and not message.photo and not message.document:
+        await message.answer('Ha, tayyor PDF yubora olaman. Mavzu yoki matnni yozing, rasmga esa reply qilib “PDF qil” deng.')
+        return
     blocked = await core.limit_reached(db, cfg, uid, 'requests')
     if blocked:
         await message.answer(blocked)
@@ -142,9 +146,14 @@ async def handle_tools(message, db, ai, cfg):
             summary = caption
         else:
             source, images = await source_content(message, cfg, db)
+            pdf_plan = None
+            if fmt == "pdf":
+                source = clean_copy(source)
             # Oddiy konvertatsiyada model matnni o'zgartirmaydi.
-            transform = bool(re.search(r'yoz|haqida|yarat|slayd|tahrir|tarjima|xulosa|tuzib|matn.*o.q|matn.*ajrat', instruction, re.I))
+            transform = bool(re.search(r'yoz|haqida|yarat|slayd|tahrir|tarjima|xulosa|tuzib|matn.*o.q|matn.*ajrat|dizayn|bezat|maket|rangli|vatman|taqdimot', instruction, re.I))
             transform = transform or bool(images and fmt in TEXT_FORMATS)
+            if fmt == 'pdf' and source and not re.search(r'o.zgartirma|aynan|verbatim', instruction, re.I):
+                transform = True
             prompt = re.sub(r'^/file(?:@\w+)?\s+\w+\s*', '', instruction, flags=re.I)
             if source and not transform:
                 output = source
@@ -158,7 +167,9 @@ async def handle_tools(message, db, ai, cfg):
                           'Reply in the user language. Do not invent sources or facts from an unseen image. '
                           'Read attached images accurately; mark unreadable text instead of guessing. '
                           'Keep output under 16000 characters. ')
-                if fmt in TEXT_FORMATS:
+                if fmt == 'pdf':
+                    system = PLAN_PROMPT
+                elif fmt in TEXT_FORMATS:
                     system += f'Output only valid {fmt} source/content, without Markdown fences or commentary. Never execute code.'
                 elif fmt == 'pptx':
                     system += ('Write 4-10 slides unless a count is specified (maximum 20). '
@@ -174,9 +185,25 @@ async def handle_tools(message, db, ai, cfg):
                         for pic in images]
                 output = await collect(ai, [{'role': 'system', 'content': system},
                                            {'role': 'user', 'content': content}])
+                if fmt == 'pdf':
+                    pdf_plan = parse_plan(output)
+                    layout, theme = infer_style(instruction, source)
+                    if layout == 'presentation':
+                        pdf_plan['layout'] = layout
+                        pdf_plan['cover'] = True
+                    if theme == 'space':
+                        pdf_plan['theme'] = theme
+                    output = pdf_plan['title'] + '\n' + pdf_plan['subtitle'] + '\n\n' + '\n\n'.join(
+                        section['title'] + '\n' + '\n'.join(section['paragraphs'] + section['bullets'] + section['code']) +
+                        '\n' + '\n'.join(' | '.join(t['headers']) + '\n' + '\n'.join(' | '.join(row) for row in t['rows']) for t in section['tables'])
+                        for section in pdf_plan['sections'])
                 if fmt in TEXT_FORMATS:
                     images = []
-            data, filename = await asyncio.to_thread(build_file, fmt, output, images)
+            if fmt == 'pdf':
+                data, filename = await asyncio.to_thread(build_file, fmt, output, images,
+                    pdf_plan=pdf_plan, instruction=instruction)
+            else:
+                data, filename = await asyncio.to_thread(build_file, fmt, output, images)
             if len(data) > 45 * 1024 * 1024:
                 raise ValueError('Natija juda katta. Manbani qisqartiring.')
             if stop.is_set():
@@ -204,3 +231,4 @@ async def handle_tools(message, db, ai, cfg):
         return
     with contextlib.suppress(Exception):
         await status.delete()
+

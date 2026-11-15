@@ -46,7 +46,7 @@ def blocks(text: str):
             yield title + (' (davomi)' if n else ''), '\n'.join(wrapped[n:n + 14])
 
 
-def build_file(fmt: str, text: str, images: list[bytes] | None = None) -> tuple[bytes, str]:
+def build_file(fmt: str, text: str, images: list[bytes] | None = None, *, pdf_plan=None, instruction="") -> tuple[bytes, str]:
     fmt = fmt.lower().lstrip('.')
     if fmt not in FORMATS:
         raise ValueError('Bu format hozircha qo‘llanmaydi.')
@@ -59,35 +59,9 @@ def build_file(fmt: str, text: str, images: list[bytes] | None = None) -> tuple[
             raise ValueError('Rasmni joylash uchun PDF, DOCX yoki PPTX tanlang.')
         return strip_fence(text).encode('utf-8'), 'AE_Yordamchi.' + fmt
     if fmt == 'pdf':
-        from reportlab.lib.styles import ParagraphStyle
-        from reportlab.pdfbase import pdfmetrics
-        from reportlab.pdfbase.ttfonts import TTFont
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
-        font = Path(__file__).with_name('AE_Font.ttf')
-        if not font.exists():
-            font = Path('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
-        if not font.exists():
-            raise ValueError('AE_Font.ttf shrift faylini bot papkasiga yuklang.')
-        if 'AEUnicode' not in pdfmetrics.getRegisteredFontNames():
-            pdfmetrics.registerFont(TTFont('AEUnicode', str(font)))
-        style = ParagraphStyle('AE', fontName='AEUnicode', fontSize=10.5, leading=16,
-                               spaceAfter=8, wordWrap='CJK')
-        heading = ParagraphStyle('AEHeading', parent=style, fontSize=17, leading=23,
-                                 spaceBefore=12, spaceAfter=12)
-        story = []
-        for line in text.splitlines():
-            if line.startswith('# '):
-                story.append(Paragraph(escape(line[2:]), heading))
-            else:
-                story.append(Paragraph(escape(line) if line.strip() else ' ', style))
-        for pic in pics:
-            image = Image(io.BytesIO(pic))
-            factor = min(480 / image.imageWidth, 650 / image.imageHeight, 1)
-            image.drawWidth = image.imageWidth * factor
-            image.drawHeight = image.imageHeight * factor
-            story.extend([Spacer(1, 12), image])
-        SimpleDocTemplate(out, title='AE Yordamchi', leftMargin=45, rightMargin=45,
-                          topMargin=42, bottomMargin=42).build(story or [Paragraph(' ', style)])
+        from pdf_layout import render_pdf, from_markdown
+        plan = pdf_plan if pdf_plan is not None else from_markdown(text, instruction)
+        return render_pdf(plan, pics), 'AE_Yordamchi.pdf'
     elif fmt == 'docx':
         from docx import Document
         from docx.shared import Inches, Pt
@@ -139,3 +113,4 @@ def build_file(fmt: str, text: str, images: list[bytes] | None = None) -> tuple[
             deck.slides.add_slide(deck.slide_layouts[6])
         deck.save(out)
     return out.getvalue(), 'AE_Yordamchi.' + fmt
+
